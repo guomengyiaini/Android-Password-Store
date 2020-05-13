@@ -46,6 +46,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.zeapo.pwdstore.autofill.oreo.AutofillMatcher
 import com.zeapo.pwdstore.autofill.oreo.BrowserAutofillSupportLevel
 import com.zeapo.pwdstore.autofill.oreo.getInstalledBrowsersWithAutofillSupportLevel
+import com.zeapo.pwdstore.crypto.PasswordCreationActivity
 import com.zeapo.pwdstore.crypto.PgpActivity
 import com.zeapo.pwdstore.crypto.PgpActivity.Companion.getLongName
 import com.zeapo.pwdstore.git.BaseGitActivity
@@ -573,10 +574,9 @@ class PasswordStore : AppCompatActivity() {
         if (!validateState()) return
         val currentDir = currentDir
         tag(TAG).i { "Adding file to : ${currentDir.absolutePath}" }
-        val intent = Intent(this, PgpActivity::class.java)
+        val intent = Intent(this, PasswordCreationActivity::class.java)
         intent.putExtra("FILE_PATH", currentDir.absolutePath)
         intent.putExtra("REPO_PATH", getRepositoryDirectory(applicationContext).absolutePath)
-        intent.putExtra("OPERATION", "ENCRYPT")
         startActivityForResult(intent, REQUEST_CODE_ENCRYPT)
     }
 
