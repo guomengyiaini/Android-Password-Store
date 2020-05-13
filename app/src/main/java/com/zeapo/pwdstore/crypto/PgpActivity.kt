@@ -68,12 +68,12 @@ import kotlinx.android.synthetic.main.decrypt_layout.crypto_password_show_label
 import kotlinx.android.synthetic.main.decrypt_layout.crypto_password_toggle_show
 import kotlinx.android.synthetic.main.decrypt_layout.crypto_username_show
 import kotlinx.android.synthetic.main.decrypt_layout.crypto_username_show_label
-import kotlinx.android.synthetic.main.encrypt_layout.crypto_extra_edit
-import kotlinx.android.synthetic.main.encrypt_layout.crypto_password_category
-import kotlinx.android.synthetic.main.encrypt_layout.crypto_password_edit
-import kotlinx.android.synthetic.main.encrypt_layout.crypto_password_file_edit
-import kotlinx.android.synthetic.main.encrypt_layout.encrypt_username
-import kotlinx.android.synthetic.main.encrypt_layout.generate_password
+import kotlinx.android.synthetic.main.password_creation_activity.crypto_extra_edit
+import kotlinx.android.synthetic.main.password_creation_activity.crypto_password_category
+import kotlinx.android.synthetic.main.password_creation_activity.crypto_password_edit
+import kotlinx.android.synthetic.main.password_creation_activity.crypto_password_file_edit
+import kotlinx.android.synthetic.main.password_creation_activity.encrypt_username
+import kotlinx.android.synthetic.main.password_creation_activity.generate_password
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import me.msfjarvis.openpgpktx.util.OpenPgpApi
@@ -176,7 +176,7 @@ class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
                 }
             }
             "ENCRYPT" -> {
-                setContentView(R.layout.encrypt_layout)
+                setContentView(R.layout.password_creation_activity)
 
                 generate_password?.setOnClickListener {
                     generatePassword()
@@ -656,7 +656,7 @@ class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
      * Opens EncryptActivity with the information for this file to be edited
      */
     private fun editPassword() {
-        setContentView(R.layout.encrypt_layout)
+        setContentView(R.layout.password_creation_activity)
         generate_password?.setOnClickListener {
             when (settings.getString("pref_key_pwgen_type", KEY_PWGEN_TYPE_CLASSIC)) {
                 KEY_PWGEN_TYPE_CLASSIC -> PasswordGeneratorDialogFragment()
