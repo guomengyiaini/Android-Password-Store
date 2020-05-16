@@ -89,10 +89,8 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
 import org.openintents.openpgp.IOpenPgpService2
 import org.openintents.openpgp.OpenPgpError
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.nio.charset.Charset
 import java.util.Date
 
 class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
@@ -125,8 +123,6 @@ class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
     private val relativeParentPath: String by lazy { getParentPath(fullPath, repoPath) }
 
     val settings: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
-    private val keyIDs get() = _keyIDs
-    private var _keyIDs = emptySet<String>()
     private var mServiceConnection: OpenPgpServiceConnection? = null
     private var delayTask: DelayShow? = null
     private val receiver = object : BroadcastReceiver() {
@@ -141,7 +137,6 @@ class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
         tag(TAG)
 
         // some persistence
-        _keyIDs = settings.getStringSet("openpgp_key_ids_set", null) ?: emptySet()
         val providerPackageName = settings.getString("openpgp_provider_list", "")
 
         if (TextUtils.isEmpty(providerPackageName)) {
@@ -313,8 +308,6 @@ class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
             R.id.copy_password -> copyPasswordToClipBoard()
             R.id.share_password_as_plaintext -> shareAsPlaintext()
             R.id.edit_password -> editPassword()
-            R.id.crypto_confirm_add -> encrypt()
-            R.id.crypto_confirm_add_and_copy -> encrypt(true)
             R.id.crypto_cancel_add -> {
                 if (passwordEntry?.hotpIsIncremented() == false) {
                     setResult(RESULT_CANCELED)
@@ -556,103 +549,6 @@ class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
     }
 
     /**
-     * Encrypts the password and the extra content
-     */
-    private fun encrypt(copy: Boolean = false) {
-        // if HOTP was incremented, we leave fields as is; they have already been set
-        if (intent.getStringExtra("OPERATION") != "INCREMENT") {
-            editName = crypto_password_file_edit.text.toString().trim()
-            editPass = crypto_password_edit.text.toString()
-            editExtra = crypto_extra_edit.text.toString()
-        }
-
-        if (editName?.isEmpty() == true) {
-            showSnackbar(resources.getString(R.string.file_toast_text))
-            return
-        }
-
-        if (editPass?.isEmpty() == true && editExtra?.isEmpty() == true) {
-            showSnackbar(resources.getString(R.string.empty_toast_text))
-            return
-        }
-
-        if (copy) {
-            copyPasswordToClipBoard()
-        }
-
-        val data = Intent()
-        data.action = OpenPgpApi.ACTION_ENCRYPT
-
-        // EXTRA_KEY_IDS requires long[]
-        val longKeys = keyIDs.map { it.toLong() }
-        data.putExtra(OpenPgpApi.EXTRA_KEY_IDS, longKeys.toLongArray())
-        data.putExtra(OpenPgpApi.EXTRA_REQUEST_ASCII_ARMOR, true)
-
-        // TODO Check if we could use PasswordEntry to generate the file
-        val content = "$editPass\n$editExtra"
-        val iStream = ByteArrayInputStream(content.toByteArray(Charset.forName("UTF-8")))
-        val oStream = ByteArrayOutputStream()
-
-        val path = when {
-            intent.getBooleanExtra("fromDecrypt", false) -> fullPath
-            // If we allowed the user to edit the relative path, we have to consider it here instead
-            // of fullPath.
-            crypto_password_category.isEnabled -> {
-                val editRelativePath = crypto_password_category.text!!.toString().trim()
-                if (editRelativePath.isEmpty()) {
-                    showSnackbar(resources.getString(R.string.path_toast_text))
-                    return
-                }
-                "$repoPath/${editRelativePath.trim('/')}/$editName.gpg"
-            }
-            else -> "$fullPath/$editName.gpg"
-        }
-
-        lifecycleScope.launch(IO) {
-            api?.executeApiAsync(data, iStream, oStream) { result ->
-                when (result?.getIntExtra(RESULT_CODE, RESULT_CODE_ERROR)) {
-                    RESULT_CODE_SUCCESS -> {
-                        try {
-                            // TODO This might fail, we should check that the write is successful
-                            val file = File(path)
-                            val outputStream = FileUtils.openOutputStream(file)
-                            outputStream.write(oStream.toByteArray())
-                            outputStream.close()
-
-                            val returnIntent = Intent()
-                            returnIntent.putExtra("CREATED_FILE", path)
-                            returnIntent.putExtra("NAME", editName)
-                            returnIntent.putExtra("LONG_NAME", getLongName(fullPath, repoPath, editName!!))
-
-                            // if coming from decrypt screen->edit button
-                            if (intent.getBooleanExtra("fromDecrypt", false)) {
-                                returnIntent.putExtra("OPERATION", "EDIT")
-                                returnIntent.putExtra("needCommit", true)
-                            }
-
-                            if (shouldGeneratePassword) {
-                                val directoryStructure =
-                                    AutofillPreferences.directoryStructure(applicationContext)
-                                val entry = PasswordEntry(content)
-                                returnIntent.putExtra("PASSWORD", entry.password)
-                                val username = PasswordEntry(content).username
-                                    ?: directoryStructure.getUsernameFor(file)
-                                returnIntent.putExtra("USERNAME", username)
-                            }
-
-                            setResult(RESULT_OK, returnIntent)
-                            finish()
-                        } catch (e: Exception) {
-                            e(e) { "An Exception occurred" }
-                        }
-                    }
-                    RESULT_CODE_ERROR -> handleError(result)
-                }
-            }
-        }
-    }
-
-    /**
      * Opens EncryptActivity with the information for this file to be edited
      */
     private fun editPassword() {
@@ -682,7 +578,7 @@ class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
 
         val data = Intent(this, PgpActivity::class.java)
         data.putExtra("OPERATION", "EDIT")
-        data.putExtra("fromDecrypt", true)
+        data.putExtra(PasswordCreationActivity.EXTRA_FROM_DECRYPT, true)
         intent = data
         invalidateOptionsMenu()
     }
@@ -700,9 +596,9 @@ class PgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
 
             val data = Intent(this, PgpActivity::class.java)
             data.putExtra("OPERATION", "INCREMENT")
-            data.putExtra("fromDecrypt", true)
+            data.putExtra(PasswordCreationActivity.EXTRA_FROM_DECRYPT, true)
             intent = data
-            encrypt()
+            //encrypt()
         }
     }
 

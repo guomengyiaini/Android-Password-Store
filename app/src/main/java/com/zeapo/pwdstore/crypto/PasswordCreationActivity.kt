@@ -187,7 +187,7 @@ class PasswordCreationActivity : BasePgpActivity() {
         val outputStream = ByteArrayOutputStream()
 
         val path = when {
-            intent.getBooleanExtra("fromDecrypt", false) -> fullPath
+            intent.getBooleanExtra(EXTRA_FROM_DECRYPT, false) -> fullPath
             // If we allowed the user to edit the relative path, we have to consider it here instead
             // of fullPath.
             cryptoPasswordCategory.isEnabled -> {
@@ -224,7 +224,7 @@ class PasswordCreationActivity : BasePgpActivity() {
                             returnIntent.putExtra("LONG_NAME", getLongName(fullPath, repoPath, editName))
 
                             // if coming from decrypt screen->edit button
-                            if (intent.getBooleanExtra("fromDecrypt", false)) {
+                            if (intent.getBooleanExtra(EXTRA_FROM_DECRYPT, false)) {
                                 returnIntent.putExtra("OPERATION", "EDIT")
                                 returnIntent.putExtra("needCommit", true)
                             }
@@ -286,5 +286,6 @@ class PasswordCreationActivity : BasePgpActivity() {
     companion object {
         private const val KEY_PWGEN_TYPE_CLASSIC = "classic"
         private const val KEY_PWGEN_TYPE_XKPASSWD = "xkpasswd"
+        const val EXTRA_FROM_DECRYPT = "FROM_DECRYPT"
     }
 }
