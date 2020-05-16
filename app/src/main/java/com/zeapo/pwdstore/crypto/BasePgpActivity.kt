@@ -18,7 +18,6 @@ import com.github.ajalt.timberkt.Timber.tag
 import com.google.android.material.snackbar.Snackbar
 import com.zeapo.pwdstore.R
 import com.zeapo.pwdstore.UserPreference
-import kotlinx.android.synthetic.main.fragment_autofill.match
 import me.msfjarvis.openpgpktx.util.OpenPgpApi
 import me.msfjarvis.openpgpktx.util.OpenPgpServiceConnection
 import org.apache.commons.io.FilenameUtils
