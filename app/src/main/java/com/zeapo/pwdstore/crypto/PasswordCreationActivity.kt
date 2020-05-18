@@ -33,8 +33,6 @@ class PasswordCreationActivity : BasePgpActivity() {
 
     private lateinit var binding: PasswordCreationActivityBinding
 
-    private val repoPath by lazy { intent.getStringExtra("REPO_PATH") }
-    private val fullPath by lazy { intent.getStringExtra("FILE_PATH") }
     private val suggestedName by lazy { intent.getStringExtra("SUGGESTED_NAME") }
     private val suggestedPass by lazy { intent.getStringExtra("SUGGESTED_PASS") }
     private val suggestedExtra by lazy { intent.getStringExtra("SUGGESTED_EXTRA") }
@@ -60,7 +58,7 @@ class PasswordCreationActivity : BasePgpActivity() {
                 else
                     setText(path)
             }
-            suggestedName?.let { cryptoPasswordFileEdit.setText(it) }
+            suggestedName?.let { passwordFileEdit.setText(it) }
             // Allow the user to quickly switch between storing the username as the filename or
             // in the encrypted extras. This only makes sense if the directory structure is
             // FileBased.
@@ -74,10 +72,10 @@ class PasswordCreationActivity : BasePgpActivity() {
                         if (isChecked) {
                             // User wants to enable username encryption, so we add it to the
                             // encrypted extras as the first line.
-                            val username = cryptoPasswordFileEdit.text.toString()
+                            val username = passwordFileEdit.text.toString()
                             val extras = "username:$username\n${cryptoExtraEdit.text}"
 
-                            cryptoPasswordFileEdit.setText("")
+                            passwordFileEdit.setText("")
                             cryptoExtraEdit.setText(extras)
                         } else {
                             // User wants to disable username encryption, so we extract the
@@ -89,14 +87,14 @@ class PasswordCreationActivity : BasePgpActivity() {
                             // updateEncryptUsernameState, but it could still happen due to
                             // input lag.
                             if (username != null) {
-                                cryptoPasswordFileEdit.setText(username)
+                                passwordFileEdit.setText(username)
                                 cryptoExtraEdit.setText(entry.extraContentWithoutUsername)
                             }
                         }
                         updateEncryptUsernameState()
                     }
                 }
-                listOf(cryptoPasswordFileEdit, cryptoExtraEdit).forEach {
+                listOf(passwordFileEdit, cryptoExtraEdit).forEach {
                     it.doOnTextChanged { _, _, _, _ -> updateEncryptUsernameState() }
                 }
             }
@@ -142,7 +140,7 @@ class PasswordCreationActivity : BasePgpActivity() {
         encryptUsername.apply {
             if (visibility != View.VISIBLE)
                 return@with
-            val hasUsernameInFileName = cryptoPasswordFileEdit.text.toString().isNotBlank()
+            val hasUsernameInFileName = passwordFileEdit.text.toString().isNotBlank()
             // Use PasswordEntry to parse extras for username
             val entry = PasswordEntry("PLACEHOLDER\n${cryptoExtraEdit.text}")
             val hasUsernameInExtras = entry.hasUsername()
@@ -155,7 +153,7 @@ class PasswordCreationActivity : BasePgpActivity() {
      * Encrypts the password and the extra content
      */
     private fun encrypt(copy: Boolean = false) = with(binding) {
-        val editName = cryptoPasswordFileEdit.text.toString().trim()
+        val editName = passwordFileEdit.text.toString().trim()
         val editPass = cryptoPasswordEdit.text.toString()
         val editExtra = cryptoExtraEdit.text.toString()
 

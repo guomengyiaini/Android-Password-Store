@@ -5,13 +5,16 @@
 
 package com.zeapo.pwdstore.crypto
 
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.text.format.DateUtils
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.CallSuper
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.getSystemService
 import androidx.preference.PreferenceManager
 import com.github.ajalt.timberkt.Timber
 import com.github.ajalt.timberkt.Timber.tag
@@ -27,7 +30,20 @@ import org.openintents.openpgp.OpenPgpError
 @Suppress("Registered")
 open class BasePgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBound {
 
+    val repoPath: String by lazy { intent.getStringExtra("REPO_PATH") }
+    val fullPath: String by lazy { intent.getStringExtra("FILE_PATH") }
+    val name: String by lazy { getName(fullPath) }
+    val lastChangedString: CharSequence by lazy {
+        getLastChangedString(
+            intent.getLongExtra(
+                "LAST_CHANGED_TIMESTAMP",
+                -1L
+            )
+        )
+    }
+
     val settings: SharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(this) }
+    val clipboard by lazy { getSystemService<ClipboardManager>() }
 
     private var _keyIDs = emptySet<String>()
     val keyIDs get() = _keyIDs
@@ -65,6 +81,18 @@ open class BasePgpActivity : AppCompatActivity(), OpenPgpServiceConnection.OnBou
 
     private fun initOpenPgpApi() {
         api = api ?: OpenPgpApi(this, serviceConnection!!.service!!)
+    }
+
+    /**
+     * Gets a relative string describing when this shape was last changed
+     * (e.g. "one hour ago")
+     */
+    private fun getLastChangedString(timeStamp: Long): CharSequence {
+        if (timeStamp < 0) {
+            throw RuntimeException()
+        }
+
+        return DateUtils.getRelativeTimeSpanString(this, timeStamp, true)
     }
 
     /**
